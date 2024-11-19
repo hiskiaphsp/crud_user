@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - List</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+<div class="container mt-5">
+    <h2 class="text-center">User Management</h2>
+    <a href="user-form" class="btn btn-primary mb-3">Create New User</a>
+
+    <!-- Search Form Card -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title">Search Users</h5>
+        </div>
+        <div class="card-body">
+            <form id="searchForm">
+                <div class="mb-3">
+                    <label for="searchNik" class="form-label">NIK</label>
+                    <input type="text" class="form-control" id="searchNik" placeholder="Enter NIK to search">
+                </div>
+                <div class="mb-3">
+                    <label for="searchName" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="searchName" placeholder="Enter Name to search">
+                </div>
+                <button type="submit" class="btn btn-primary">Search</button>
+            </form>
+        </div>
+    </div>
+
+    <h3>User List</h3>
+    <!-- Table to display user data -->
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th scope="col">NIK</th>
+            <th scope="col">Name</th>
+            <th scope="col">Gender</th>
+            <th scope="col">Date of Birth</th>
+            <th scope="col">Address</th>
+            <th scope="col">Nationality</th>
+            <th scope="col">Actions</th>
+        </tr>
+        </thead>
+        <tbody id="userList">
+        <!-- Data rows will be inserted here -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Bootstrap and jQuery JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Function to load all users and display them in the table
+    function getUsers(nik = '', name = '') {
+        const searchParams = new URLSearchParams();
+        if (nik) searchParams.append('nik', nik);
+        if (name) searchParams.append('name', name);
+
+        // Fetch users based on search parameters
+        $.get(`/users?${searchParams.toString()}`, function(data) {
+            let usersList = $("#userList");
+            usersList.empty();  // Clear the table body first
+            data.forEach(function(user) {
+                // Format dateOfBirth to "DOB: dd-MM-yyyy" format
+                let formattedDateOfBirth = formatDate(user.dateOfBirth);
+
+                usersList.append(`
+                    <tr>
+                        <td>${user.nik}</td>
+                        <td>${user.name}</td>
+                        <td>${user.gender}</td>
+                        <td>${formattedDateOfBirth}</td>
+                        <td>${user.address}</td>
+                        <td>${user.nationality}</td>
+                        <td>
+                            <a href="user-form?id=${user.id}" class="btn btn-warning btn-sm">Edit</a>
+                            <button class="btn btn-danger btn-sm delete-btn" data-id="${user.id}">Delete</button>
+                        </td>
+                    </tr>
+                `);
+            });
+        });
+    }
+
+    // Function to format date to "dd-MM-yyyy"
+    function formatDate(dateString) {
+        // Assuming dateString is in the format 'yyyy-MM-dd' (from backend)
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`; // Format as dd-MM-yyyy
+    }
+
+    // Function to delete user
+    $(document).on("click", ".delete-btn", function() {
+        const userId = $(this).data("id");
+        $.ajax({
+            url: `/users/${userId}`,
+            type: 'DELETE',
+            success: function() {
+                alert("User deleted successfully!");
+                getUsers(); // Reload users after deletion
+            }
+        });
+    });
+
+    // Handle search form submission
+    $("#searchForm").submit(function(e) {
+        e.preventDefault();
+        const nik = $("#searchNik").val();
+        const name = $("#searchName").val();
+        getUsers(nik, name);  // Fetch users based on search parameters
+    });
+
+    // Load all users on page load
+    $(document).ready(function() {
+        getUsers();  // Load all users initially without any filters
+    });
+</script>
+</body>
+</html>
